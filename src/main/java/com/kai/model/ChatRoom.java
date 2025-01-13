@@ -29,9 +29,7 @@ public class ChatRoom {
     @Column(nullable = false)
     private String createdByName;
 
-
     private String description;
-
 
     @Column(nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

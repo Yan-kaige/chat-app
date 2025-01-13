@@ -1,9 +1,7 @@
 package com.kai.controller;
 
-import com.kai.model.ChatRoom;
 import com.kai.model.ChatRoomMessage;
 import com.kai.service.ChatRoomMessageService;
-import com.kai.service.ChatRoomService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

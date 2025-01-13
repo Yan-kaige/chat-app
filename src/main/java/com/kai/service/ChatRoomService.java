@@ -10,8 +10,6 @@ import com.kai.repository.ChatRoomRepository;
 import com.kai.repository.ChatRoomUserRepository;
 import com.kai.repository.UserRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
