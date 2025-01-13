@@ -76,6 +76,12 @@ public class ChatRoomService {
             throw new RuntimeException("Chat room not found");
         }
 
+
+        //先查此人是不是在这个聊天室里面
+        if(chatRoomUserRepository.existsByUserIdAndChatRoomId(user.getId(),roomId)){
+            return;
+        }
+
         ChatRoomUser chatRoomUser = new ChatRoomUser();
         chatRoomUser.setUser(User.builder().id(user.getId()).build());
         chatRoomUser.setChatRoom(ChatRoom.builder().id(roomId).build());

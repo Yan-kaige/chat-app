@@ -1,6 +1,7 @@
 package com.kai.controller;
 
 
+import com.kai.context.UserContext;
 import com.kai.model.User;
 import com.kai.service.UserService;
 import com.kai.util.JwtUtil;
@@ -33,7 +34,7 @@ public class UserController {
 
         if(optionalUser.isPresent()){
             User loggedInUser = optionalUser.get();
-            String token = JwtUtil.generateToken(loggedInUser.getUsername());
+            String token = JwtUtil.generateToken(loggedInUser.getUsername(), String.valueOf(loggedInUser.getId()));
             return ResponseEntity.ok().body(Map.of("token", token, "userId", loggedInUser.getId()));
         }else {
             return ResponseEntity.badRequest().body("Login failed");

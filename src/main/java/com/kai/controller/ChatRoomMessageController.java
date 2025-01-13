@@ -19,7 +19,7 @@ public class ChatRoomMessageController {
     private ChatRoomMessageService chatRoomMessageService;
 
 
-    // 获取所有聊天室
+    // 获取所有聊天室信息
     @GetMapping("/{roomId}")
     public ResponseEntity<List<ChatRoomMessage>> getAllChatRoomsMsg(@PathVariable Long roomId) {
         List<ChatRoomMessage> msg = chatRoomMessageService.getAllChatRoomMessagesByChatRoomId(roomId);

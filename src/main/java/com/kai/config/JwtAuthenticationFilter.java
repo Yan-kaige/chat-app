@@ -1,6 +1,7 @@
 package com.kai.config;
 
 
+import com.kai.context.UserContext;
 import com.kai.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,7 +41,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 Claims claims = JwtUtil.validateToken(token);
                 String username = claims.getSubject();
+                String userId = claims.getId(); // 假设 token 中存储了 userId
 
+                UserContext.setUserInfo(Long.valueOf(userId), username);
                 UserDetails userDetails = User.withUsername(username).password("").authorities("USER").build();
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
