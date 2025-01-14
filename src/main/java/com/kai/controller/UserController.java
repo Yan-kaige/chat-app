@@ -5,6 +5,7 @@ import com.kai.context.UserContext;
 import com.kai.model.User;
 import com.kai.service.UserService;
 import com.kai.util.JwtUtil;
+import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +42,18 @@ public class UserController {
         }
 
 
+    }
+
+    @PostMapping("/token/validate")
+    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authorizationHeader) {
+        try {
+            String token = authorizationHeader.replace("Bearer ", "");
+            // 假设 JwtUtil.validateToken 验证 token 并返回是否有效
+            boolean validate = JwtUtil.validate(token);
+            return ResponseEntity.ok(Map.of("valid", validate));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("valid", false));
+        }
     }
 
 
