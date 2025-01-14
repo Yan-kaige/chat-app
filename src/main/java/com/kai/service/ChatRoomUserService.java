@@ -7,7 +7,9 @@ import lombok.AllArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -28,5 +30,13 @@ public class ChatRoomUserService {
         Long userId = UserContext.getUserId();
         chatRoomUserRepository.deleteByChatRoomIdAndUserId(roomId, userId);
 
+    }
+
+    public List<Long> findUserIdsByChatRoomId(Long roomId) {
+        List<Long> userIdsByChatRoomId = chatRoomUserRepository.findUserIdsByChatRoomId(roomId);
+        if(CollectionUtils.isEmpty(userIdsByChatRoomId)){
+            return new ArrayList<>();
+        }
+        return userIdsByChatRoomId;
     }
 }

@@ -1,18 +1,23 @@
 package com.kai.service;
 
 
+import com.kai.context.UserContext;
 import com.kai.model.User;
 import com.kai.repository.UserRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Service
+@AllArgsConstructor
 public class UserService {
-    @Autowired
     private UserRepository userRepository;
+
+    private ChatRoomUserService chatRoomUserService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -27,5 +32,14 @@ public class UserService {
             return user;
         }
         return Optional.empty();
+    }
+
+    public List<User> getInvitableUsersForRoom(Long roomId) {
+        // 获取已在聊天室的用户ID列表
+        List<Long> joinedUserIds = chatRoomUserService.findUserIdsByChatRoomId(roomId);
+        joinedUserIds.add(UserContext.getUserId());
+
+        // 获取未加入聊天室的用户列表
+        return userRepository.findUsersNotInIds(joinedUserIds);
     }
 }

@@ -3,9 +3,11 @@ package com.kai.controller;
 import com.kai.model.ChatRoom;
 import com.kai.model.ChatRoomMessage;
 import com.kai.model.ChatRoomUser;
+import com.kai.model.User;
 import com.kai.repository.ChatRoomUserRepository;
 import com.kai.service.ChatRoomService;
 import com.kai.service.ChatRoomUserService;
+import com.kai.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,8 @@ public class ChatRoomController {
     private ChatRoomService chatRoomService;
 
     private ChatRoomUserService chatRoomUserService;
+
+    private UserService userService;
 
     // 创建聊天室
     @PostMapping("/create")
@@ -89,6 +93,17 @@ public class ChatRoomController {
         return ResponseEntity.ok("Exit chatroom successfully");
     }
 
+
+    @GetMapping("/{roomId}/invite-list")
+    public ResponseEntity<?> getInviteList(@PathVariable Long roomId) {
+        try {
+            List<User> inviteList = userService.getInvitableUsersForRoom(roomId);
+            return ResponseEntity.ok(inviteList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("获取可邀请用户列表失败：" + e.getMessage());
+        }
+    }
 
 
 }

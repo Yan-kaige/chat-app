@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 public class FileRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.TABLE)
-    private Long id;
+    private Long fileId;
 
     @Column(name = "room_id", nullable = false)
     private Long roomId;

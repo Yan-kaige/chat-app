@@ -2,6 +2,7 @@ package com.kai.controller;
 
 import com.kai.context.UserContext;
 import com.kai.model.FileRecord;
+import com.kai.repository.FileRecordRepository;
 import com.kai.service.FileRecordService;
 import io.minio.*;
 import lombok.AllArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/file")
@@ -29,6 +31,7 @@ public class FileUploadController {
 
 
     private FileRecordService fileRecordService;
+    private FileRecordRepository fileRecordRepository;
 
     @PostMapping("/upload/{roomId}")
     public ResponseEntity<?> uploadFile(
@@ -60,6 +63,7 @@ public class FileUploadController {
 
             // 保存上传记录到数据库
             FileRecord fileRecord = new FileRecord();
+//            fileRecord.setFile_id();
             fileRecord.setRoomId(roomId);
             fileRecord.setFileRealName(file.getOriginalFilename());
             fileRecord.setFileName(fileName);
@@ -79,16 +83,23 @@ public class FileUploadController {
 
 
     // 下载文件
-    @GetMapping("/download/{fileName}/{bucketName}")
-    public ResponseEntity<byte[]> downloadFile(@PathVariable String fileName,@PathVariable String bucketName) {
+    @GetMapping("/download/{fileId}")
+    public ResponseEntity<byte[]> downloadFile(@PathVariable String fileId) {
+        Optional<FileRecord> byId = fileRecordRepository.findById(Long.valueOf(fileId));
+
+        if (byId.isEmpty()) {
+            return ResponseEntity.status(404).body(null);
+        }
+        FileRecord fileRecord = byId.get();
+
         try (InputStream stream = minioClient.getObject(
                 GetObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(fileName)
+                        .bucket(fileRecord.getBucketName())
+                        .object(fileRecord.getFileName())
                         .build())) {
             byte[] bytes = stream.readAllBytes();
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileRecord.getFileRealName() + "\"")
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(bytes);
         } catch (Exception e) {
