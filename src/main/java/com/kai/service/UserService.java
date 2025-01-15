@@ -2,19 +2,24 @@ package com.kai.service;
 
 
 import com.kai.context.UserContext;
+import com.kai.model.ChatRoom;
 import com.kai.model.User;
+import com.kai.repository.ChatRoomRepository;
 import com.kai.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.util.CollectionUtils;
 
 @Service
 @AllArgsConstructor
 public class UserService {
+    private final ChatRoomRepository chatRoomRepository;
     private UserRepository userRepository;
 
     private ChatRoomUserService chatRoomUserService;
@@ -41,5 +46,16 @@ public class UserService {
 
         // 获取未加入聊天室的用户列表
         return userRepository.findUsersNotInIds(joinedUserIds);
+    }
+
+    public List<ChatRoom> getMyChatRooms() {
+        Long userId = UserContext.getUserId();
+        List<ChatRoom> chatRoomList = chatRoomRepository.findChatRoomsByCreatedBy(userId);
+
+        if(CollectionUtils.isEmpty(chatRoomList)){
+            return new ArrayList<>();
+        }
+
+        return  chatRoomList;
     }
 }

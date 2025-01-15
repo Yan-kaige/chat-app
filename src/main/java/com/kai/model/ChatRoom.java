@@ -31,6 +31,9 @@ public class ChatRoom {
 
     private String description;
 
+    private String password;
+
+
     @Column(nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt = LocalDateTime.now();

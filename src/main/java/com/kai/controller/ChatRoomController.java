@@ -64,9 +64,8 @@ public class ChatRoomController {
 
     // 加入聊天室
     @PostMapping("/{roomId}/join")
-    public ResponseEntity<String> joinChatRoom(@PathVariable Long roomId) {
-        chatRoomService.joinChatRoom(roomId);
-        return ResponseEntity.ok("Joined chatroom successfully");
+    public ResponseEntity<?> joinChatRoom(@PathVariable Long roomId, @RequestParam(required = false) String password) {
+        return chatRoomService.joinChatRoom(roomId, password);
     }
 
     // 发送消息
@@ -94,6 +93,7 @@ public class ChatRoomController {
     }
 
 
+    // 获取聊天室可被邀请用户列表
     @GetMapping("/{roomId}/invite-list")
     public ResponseEntity<?> getInviteList(@PathVariable Long roomId) {
         try {
@@ -104,6 +104,22 @@ public class ChatRoomController {
             return ResponseEntity.badRequest().body("获取可邀请用户列表失败：" + e.getMessage());
         }
     }
+
+    // 获取我的聊天室
+    @GetMapping("/my")
+    public ResponseEntity<List<ChatRoom>> getMyChatRooms() {
+        List<ChatRoom> myChatRooms = userService.getMyChatRooms();
+        return ResponseEntity.ok(myChatRooms);
+    }
+
+    // 更新聊天室密码
+    @PostMapping("/{roomId}/update-password")
+    public ResponseEntity<?> updateChatRoomPassword(@PathVariable Long roomId, @RequestParam(value = "newPassword",required = false) String newPassword) {
+        chatRoomService.updateChatRoomPassword(roomId, newPassword);
+        return ResponseEntity.ok("Chat room password updated successfully");
+    }
+
+
 
 
 }

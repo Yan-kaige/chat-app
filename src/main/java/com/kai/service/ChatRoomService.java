@@ -1,6 +1,8 @@
 package com.kai.service;
 
 
+import com.kai.context.UserContext;
+import com.kai.exception.ServiceException;
 import com.kai.model.ChatRoom;
 import com.kai.model.ChatRoomMessage;
 import com.kai.model.ChatRoomUser;
@@ -10,6 +12,8 @@ import com.kai.repository.ChatRoomRepository;
 import com.kai.repository.ChatRoomUserRepository;
 import com.kai.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -67,7 +71,7 @@ public class ChatRoomService {
     }
 
 
-    public void joinChatRoom(Long roomId) {
+    public ResponseEntity<?> joinChatRoom(Long roomId,String password) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName(); // 获取当前登录用户名
 
         User user = userRepository.findByUsername(username).orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -79,14 +83,28 @@ public class ChatRoomService {
 
         //先查此人是不是在这个聊天室里面
         if(chatRoomUserRepository.existsByUserIdAndChatRoomId(user.getId(),roomId)){
-            return;
+            return ResponseEntity.ok("Joined chatroom successfully");
         }
+
+        //查询此聊天室是否有密码
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow(() -> new IllegalArgumentException("Chat room not found"));
+
+        //自己创建的聊天室不需要密码
+        if(!chatRoom.getCreatedBy().equals(user.getId())){
+            if(chatRoom.getPassword()!=null && !chatRoom.getPassword().equals(password)){
+                return ResponseEntity.ok("Password is incorrect");
+            }
+        }
+
+
+
 
         ChatRoomUser chatRoomUser = new ChatRoomUser();
         chatRoomUser.setUser(User.builder().id(user.getId()).build());
         chatRoomUser.setChatRoom(ChatRoom.builder().id(roomId).build());
         chatRoomUser.setJoinedAt(LocalDateTime.now());
         chatRoomUserRepository.save(chatRoomUser);
+        return ResponseEntity.ok("Joined chatroom successfully");
     }
 
     public ChatRoomMessage sendMessage(Long roomId, ChatRoomMessage message) {
@@ -108,5 +126,17 @@ public class ChatRoomService {
 
         // 广播消息到 WebSocket 订阅的客户端
         return message;
+    }
+
+    public void updateChatRoomPassword(Long roomId, String newPassword) {
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Chat room not found"));
+
+        if (!chatRoom.getCreatedBy().equals(UserContext.getUserId())) {
+            throw new ServiceException("Only owner can update the password");
+        }
+
+        chatRoom.setPassword(newPassword);
+        chatRoomRepository.save(chatRoom);
     }
 }
