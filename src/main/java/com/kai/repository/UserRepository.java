@@ -15,4 +15,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.id NOT IN :userIds")
     List<User> findUsersNotInIds(@Param("userIds") List<Long> userIds);
 
+    Optional<User> findByUsernameOrEmail(String identifier, String identifier1);
+
+    Optional<User> findByEmail(String email);
 }

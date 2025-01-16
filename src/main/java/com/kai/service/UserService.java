@@ -1,9 +1,11 @@
 package com.kai.service;
 
 
+import com.kai.RedisOptEnum;
 import com.kai.context.UserContext;
 import com.kai.model.ChatRoom;
 import com.kai.model.User;
+import com.kai.model.req.RegisterRequest;
 import com.kai.repository.ChatRoomRepository;
 import com.kai.repository.UserRepository;
 import lombok.AllArgsConstructor;
@@ -26,13 +28,31 @@ public class UserService {
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public User registerUser(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return userRepository.save(user);
+
+    private RedisService redisService;
+
+    public void registerUser(RegisterRequest registerRequest) {
+        //检查用户名是否已存在
+        if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already exists.");
+        }
+
+        //检查邮箱是否已存在
+        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already exists.");
+        }
+
+
+        User user = new User();
+        user.setUsername(registerRequest.getUsername());
+        user.setEmail(registerRequest.getEmail());
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        userRepository.save(user);
+        redisService.deleteVerificationCode(registerRequest.getEmail(), RedisOptEnum.EMAIL_VERIFICATION_CODES);
     }
 
-    public Optional<User> loginUser(String username, String password) {
-        Optional<User> user = userRepository.findByUsername(username);
+    public Optional<User> loginUser(String identifier, String password) {
+        Optional<User> user = userRepository.findByUsernameOrEmail(identifier, identifier);
         if (user.isPresent() && passwordEncoder.matches(password, user.get().getPassword())) {
             return user;
         }
@@ -57,5 +77,20 @@ public class UserService {
         }
 
         return  chatRoomList;
+    }
+
+    public boolean isEmailRegistered(String email) {
+        return userRepository.findByEmail(email).isPresent();
+    }
+
+    public boolean updatePasswordByEmail(String email, String newPassword) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            return true;
+        }
+        return false;
     }
 }

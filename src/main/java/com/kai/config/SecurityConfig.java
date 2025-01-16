@@ -14,7 +14,7 @@ public class SecurityConfig {
         http
                 .csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/api/register", "/api/login", "/ws/**","/minio/**","/api/file/**").permitAll()
+                .antMatchers("/api/register/**", "/api/login", "/ws/**","/minio/**","/api/file/**","/api/reset-password/**","/api/captcha/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .headers().frameOptions().disable() // 避免框架选项拦截
