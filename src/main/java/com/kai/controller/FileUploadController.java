@@ -1,6 +1,7 @@
 package com.kai.controller;
 
 import com.kai.context.UserContext;
+import com.kai.exception.ServiceException;
 import com.kai.model.FileRecord;
 import com.kai.repository.FileRecordRepository;
 import com.kai.service.FileRecordService;
@@ -9,7 +10,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import com.kai.common.R;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,7 +36,7 @@ public class FileUploadController {
     private FileRecordRepository fileRecordRepository;
 
     @PostMapping("/upload/{roomId}")
-    public ResponseEntity<?> uploadFile(
+    public R<?> uploadFile(
             @PathVariable Long roomId,@RequestParam(required = false) String bucketName,
             @RequestParam("file") MultipartFile file
     ) {
@@ -73,22 +75,22 @@ public class FileUploadController {
             fileRecord.setCreatedAt(LocalDateTime.now());
             fileRecordService.saveFileRecord(fileRecord);
 
-            return ResponseEntity.ok().body("File uploaded successfully!");
+            return R.ok("File uploaded successfully!");
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("File upload failed: " + e.getMessage());
+            return R.ok("File upload failed: " + e.getMessage());
         }
     }
 
 
     // 下载文件
     @GetMapping("/download/{fileId}")
-    public ResponseEntity<byte[]> downloadFile(@PathVariable String fileId) {
+    public void downloadFile(@PathVariable String fileId, HttpServletResponse response) {
         Optional<FileRecord> byId = fileRecordRepository.findById(Long.valueOf(fileId));
 
         if (byId.isEmpty()) {
-            return ResponseEntity.status(404).body(null);
+            throw new ServiceException("File not found");
         }
         FileRecord fileRecord = byId.get();
 
@@ -98,32 +100,35 @@ public class FileUploadController {
                         .object(fileRecord.getFileName())
                         .build())) {
             byte[] bytes = stream.readAllBytes();
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileRecord.getFileRealName() + "\"")
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(bytes);
+
+
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileRecord.getFileRealName() + "\"");
+            response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+            response.getOutputStream().write(bytes);
+
+
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(null);
+            throw new ServiceException(e.getMessage());
         }
     }
 
     //查看指定聊天室的文件列表
     @GetMapping("/files/{roomId}")
-    public ResponseEntity<?> getFilesByRoomId(@PathVariable Long roomId) {
-        return ResponseEntity.ok(fileRecordService.getFilesByRoomId(roomId));
+    public R<?> getFilesByRoomId(@PathVariable Long roomId) {
+        return R.ok(fileRecordService.getFilesByRoomId(roomId));
     }
 
 
     //删除文件
     @DeleteMapping("/delete/{fileId}")
-    public ResponseEntity<?> deleteFile(@PathVariable Long fileId) {
+    public R<?> deleteFile(@PathVariable Long fileId) {
         try {
             fileRecordService.removeFileRecordById(fileId);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return R.ok("Error: " + e.getMessage());
         }
-        return ResponseEntity.ok("File deleted successfully");
+        return R.ok("File deleted successfully");
     }
 }

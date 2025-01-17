@@ -13,7 +13,7 @@ import com.kai.repository.ChatRoomUserRepository;
 import com.kai.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import com.kai.common.R;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -71,7 +71,7 @@ public class ChatRoomService {
     }
 
 
-    public ResponseEntity<?> joinChatRoom(Long roomId,String password) {
+    public R<?> joinChatRoom(Long roomId,String password) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName(); // 获取当前登录用户名
 
         User user = userRepository.findByUsername(username).orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -83,7 +83,7 @@ public class ChatRoomService {
 
         //先查此人是不是在这个聊天室里面
         if(chatRoomUserRepository.existsByUserIdAndChatRoomId(user.getId(),roomId)){
-            return ResponseEntity.ok("Joined chatroom successfully");
+            return R.ok("Joined chatroom successfully");
         }
 
         //查询此聊天室是否有密码
@@ -92,7 +92,7 @@ public class ChatRoomService {
         //自己创建的聊天室不需要密码
         if(!chatRoom.getCreatedBy().equals(user.getId())){
             if(chatRoom.getPassword()!=null && !chatRoom.getPassword().equals(password)){
-                return ResponseEntity.ok("Password is incorrect");
+                return R.ok("Password is incorrect");
             }
         }
 
@@ -104,7 +104,7 @@ public class ChatRoomService {
         chatRoomUser.setChatRoom(ChatRoom.builder().id(roomId).build());
         chatRoomUser.setJoinedAt(LocalDateTime.now());
         chatRoomUserRepository.save(chatRoomUser);
-        return ResponseEntity.ok("Joined chatroom successfully");
+        return R.ok("Joined chatroom successfully");
     }
 
     public ChatRoomMessage sendMessage(Long roomId, ChatRoomMessage message) {

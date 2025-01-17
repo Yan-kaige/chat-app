@@ -2,11 +2,11 @@ package com.kai.controller;
 
 import com.google.code.kaptcha.impl.DefaultKaptcha;
 import com.kai.RedisOptEnum;
+import com.kai.common.R;
 import com.kai.service.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.imageio.ImageIO;
@@ -31,7 +31,7 @@ public class CaptchaController {
     private long captchaExpiration;
 
     @GetMapping("/captcha/create")
-    public ResponseEntity<?> generateCaptcha() {
+    public R<?> generateCaptcha() {
         // 生成验证码文本和图片
         String text = captchaProducer.createText();
         BufferedImage image = captchaProducer.createImage(text);
@@ -51,9 +51,9 @@ public class CaptchaController {
                     "key", captchaKey,
                     "image", base64Image
             );
-            return ResponseEntity.ok(response);
+            return R.ok(response);
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("生成验证码失败！");
+            return R.fail("生成验证码失败！");
         }
     }
 
