@@ -9,6 +9,8 @@ import com.kai.model.req.RegisterRequest;
 import com.kai.repository.ChatRoomRepository;
 import com.kai.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,9 @@ public class UserService {
 
 
     private RedisService redisService;
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
 
     public void registerUser(RegisterRequest registerRequest) {
         //检查用户名是否已存在

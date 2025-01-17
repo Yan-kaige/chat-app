@@ -13,6 +13,8 @@ import com.kai.service.RedisService;
 import com.kai.service.UserService;
 import com.kai.util.JwtUtil;
 import io.jsonwebtoken.Claims;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -34,6 +36,9 @@ public class UserController {
 
     @Autowired
     private EmailService emailService;
+
+
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
 
 
@@ -76,6 +81,8 @@ public class UserController {
             String token = JwtUtil.generateToken(loggedInUser.getUsername(), String.valueOf(loggedInUser.getId()));
             return R.ok(Map.of("token", token, "userId", loggedInUser.getId(),"username",loggedInUser.getUsername()));
         }else {
+            logger.info("Login failed for user: 用户名或密码错误");
+
             return R.fail("Login failed");
         }
 

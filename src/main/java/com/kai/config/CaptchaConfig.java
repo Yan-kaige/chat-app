@@ -18,7 +18,7 @@ public class CaptchaConfig {
         properties.setProperty("kaptcha.image.width", "150");
         properties.setProperty("kaptcha.image.height", "50");
         properties.setProperty("kaptcha.textproducer.font.size", "40");
-        properties.setProperty("kaptcha.textproducer.char.length", "5");
+        properties.setProperty("kaptcha.textproducer.char.length", "4");
         Config config = new Config(properties);
         kaptcha.setConfig(config);
         return kaptcha;
