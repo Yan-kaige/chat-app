@@ -156,7 +156,8 @@ public class ChatRoomController {
                     chatRoomMessage.setMessageType("4");
                     break;
                 default:
-                    return R.error("文件类型不支持");
+                    chatRoomMessage.setMessageText(fileName);
+                    chatRoomMessage.setMessageType("5");
             }
 
             String bucketName = "";
@@ -172,7 +173,7 @@ public class ChatRoomController {
                     bucketName = "video-messages";
                     break;
                 default:
-                    return R.error("文件类型不支持");
+                    bucketName="other-messages";
             }
 
             String url = minioService.upload(file, bucketName);
@@ -220,7 +221,8 @@ public class ChatRoomController {
                     privateMessage.setMessageType("4");
                     break;
                 default:
-                    return R.error("文件类型不支持");
+                    privateMessage.setMessageText(fileName);
+                    privateMessage.setMessageType("5");
             }
 
             String bucketName = "";
@@ -236,7 +238,7 @@ public class ChatRoomController {
                     bucketName = "video-messages";
                     break;
                 default:
-                    return R.error("文件类型不支持");
+                    bucketName="other-messages";
             }
 
             String url = minioService.upload(file, bucketName);
