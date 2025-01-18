@@ -1,19 +1,23 @@
 package com.kai.controller;
 
-import com.kai.model.ChatRoom;
-import com.kai.model.ChatRoomMessage;
-import com.kai.model.ChatRoomUser;
-import com.kai.model.User;
+import com.kai.model.*;
 import com.kai.repository.ChatRoomUserRepository;
-import com.kai.service.ChatRoomService;
-import com.kai.service.ChatRoomUserService;
-import com.kai.service.UserService;
+import com.kai.service.*;
+import com.kai.util.AssertUtils;
+import io.minio.MinioClient;
 import lombok.AllArgsConstructor;
 import com.kai.common.R;
+import lombok.extern.java.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+
+import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 
 
 @RestController
@@ -26,6 +30,12 @@ public class ChatRoomController {
     private ChatRoomUserService chatRoomUserService;
 
     private UserService userService;
+
+    private MinioService minioService;
+
+    PrivateMessageService privateMessageService;
+
+    private static final Logger logger = LoggerFactory.getLogger(ChatRoomController.class);
 
     // 创建聊天室
     @PostMapping("/create")
@@ -119,7 +129,133 @@ public class ChatRoomController {
         return R.ok("Chat room password updated successfully");
     }
 
+    @PostMapping("/sendMediaToRoom/{roomId}")
+    public R<?> sendMediaToRoom(@RequestParam("file") MultipartFile file,@PathVariable Long roomId) {
+        try {
+            // 上传音频到 MinIO 并获取文件 URL
+            ChatRoomMessage chatRoomMessage = new ChatRoomMessage();
 
+            //根据文件名称判断是音频 图片 还是视频
+            String fileName = file.getOriginalFilename();
+            AssertUtils.assertNotEmpty(fileName, "文件名不能为空");
+            String fileType = fileName.substring(fileName.lastIndexOf(".")+1);
+            switch (fileType) {
+                case "mp3":
+                case "wav":
+                case "webm":
+                    chatRoomMessage.setMessageType("3");
+                    break;
+                case "jpg":
+                case "png":
+                case "jpeg":
+                    chatRoomMessage.setMessageType("2");
+                    break;
+                case "mp4":
+                case "avi":
+                case "mov":
+                    chatRoomMessage.setMessageType("4");
+                    break;
+                default:
+                    return R.error("文件类型不支持");
+            }
+
+            String bucketName = "";
+
+            switch (chatRoomMessage.getMessageType()) {
+                case "2":
+                    bucketName = "image-messages";
+                    break;
+                case "3":
+                    bucketName = "audio-messages";
+                    break;
+                case "4":
+                    bucketName = "video-messages";
+                    break;
+                default:
+                    return R.error("文件类型不支持");
+            }
+
+            String url = minioService.upload(file, bucketName);
+            chatRoomMessage.setMediaUrl(url);
+
+
+            chatRoomService.sendMessage(roomId, chatRoomMessage);
+
+
+
+            // 返回音频 URL
+            return R.success("上传成功", Collections.singletonMap("url", url));
+        } catch (Exception e) {
+            logger.error("上传音频失败", e);
+            return R.error("上传失败");
+        }
+    }
+
+
+    @PostMapping("/sendMediaToPerson/{roomId}/{personId}")
+    public R<?> sendMediaToPerson(@RequestParam("file") MultipartFile file,@PathVariable("personId") Long personId,@PathVariable("roomId") Long roomId) {
+        try {
+            // 上传音频到 MinIO 并获取文件 URL
+            PrivateMessage privateMessage = new PrivateMessage();
+
+            //根据文件名称判断是音频 图片 还是视频
+            String fileName = file.getOriginalFilename();
+            AssertUtils.assertNotEmpty(fileName, "文件名不能为空");
+            String fileType = fileName.substring(fileName.lastIndexOf(".")+1);
+            switch (fileType) {
+                case "mp3":
+                case "wav":
+                case "webm":
+
+                    privateMessage.setMessageType("3");
+                    break;
+                case "jpg":
+                case "png":
+                case "jpeg":
+                    privateMessage.setMessageType("2");
+                    break;
+                case "mp4":
+                case "avi":
+                case "mov":
+                    privateMessage.setMessageType("4");
+                    break;
+                default:
+                    return R.error("文件类型不支持");
+            }
+
+            String bucketName = "";
+
+            switch (privateMessage.getMessageType()) {
+                case "2":
+                    bucketName = "image-messages";
+                    break;
+                case "3":
+                    bucketName = "audio-messages";
+                    break;
+                case "4":
+                    bucketName = "video-messages";
+                    break;
+                default:
+                    return R.error("文件类型不支持");
+            }
+
+            String url = minioService.upload(file, bucketName);
+            privateMessage.setMediaUrl(url);
+
+
+            privateMessageService.sendPrivateMessage(roomId, personId,privateMessage);
+
+
+
+
+
+            // 返回音频 URL
+            return R.success("上传成功", Collections.singletonMap("url", url));
+        } catch (Exception e) {
+            logger.error("上传音频失败", e);
+            return R.error("上传失败");
+        }
+    }
 
 
 }

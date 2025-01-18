@@ -25,8 +25,14 @@ public class ChatRoomMessage {
     @JoinColumn(name = "user_id", nullable = false)
     private User user; // 消息发送者
 
-    @Column(name = "message", nullable = false)
+    @Column(name = "message")
     private String messageText; // 消息内容
+
+    @Column(name = "message_type", nullable = false)
+    private String messageType="1"; // 消息类型  1 文字 2 图片 3 语音 4 视频
+
+    @Column(name = "media_url")
+    private String mediaUrl; // 媒体 URL
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @JsonFormat(pattern = " yyyy年MM月dd日 HH时mm分ss秒")

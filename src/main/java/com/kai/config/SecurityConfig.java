@@ -15,6 +15,10 @@ public class SecurityConfig {
                 .csrf().disable()
                 .authorizeRequests()
                 .antMatchers("/api/register/**", "/api/login", "/ws/**","/minio/**","/api/file/**","/api/reset-password/**","/api/captcha/**").permitAll()
+                .antMatchers("/actuator/**").permitAll()
+                .antMatchers("/metrics/**").permitAll()
+                .antMatchers("/trace").permitAll()
+                .antMatchers("/heapdump").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .headers().frameOptions().disable() // 避免框架选项拦截

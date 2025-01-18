@@ -29,8 +29,15 @@ public class PrivateMessage {
     @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
 
-    @Column(name = "message_text", nullable = false)
+    @Column(name = "message_text")
     private String messageText;
+
+    @Column(name = "message_type", nullable = false)
+    private String messageType="1"; // 消息类型
+
+    @Column(name = "media_url")
+    private String mediaUrl; // 媒体 URL
+
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

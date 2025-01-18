@@ -31,6 +31,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 requestPath.startsWith("/ws")
                 || requestPath.startsWith("/minio")
                 || requestPath.startsWith("/api/file")
+               || requestPath.startsWith("/actuator/**")
+               || requestPath.startsWith("/metrics/**")
+               || requestPath.startsWith("/trace")
+               || requestPath.startsWith("/heapdump")
         ) { // 添加对 WebSocket 路径的放行
             filterChain.doFilter(request, response);
             return;

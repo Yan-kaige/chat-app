@@ -12,11 +12,18 @@ spring:
   mail:
     host: smtp.gmail.com    # 邮件服务器主机地址
     port: 587                 # SMTP 端口
-    username: xxx
-    password: xxx
+    username: ${GMAIL_USERNAME}  # 从环境变量中读取
+    password: ${GMAIL_PASSWORD}  # 从环境变量中读取
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+    enabled-by-default: on

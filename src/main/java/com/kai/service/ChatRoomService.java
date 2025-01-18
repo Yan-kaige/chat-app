@@ -18,6 +18,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -91,8 +92,8 @@ public class ChatRoomService {
 
         //自己创建的聊天室不需要密码
         if(!chatRoom.getCreatedBy().equals(user.getId())){
-            if(chatRoom.getPassword()!=null && !chatRoom.getPassword().equals(password)){
-                return R.ok("Password is incorrect");
+            if(!StringUtils.isEmpty(chatRoom.getPassword()) && !chatRoom.getPassword().equals(password)){
+                return R.fail("Password is incorrect");
             }
         }
 
