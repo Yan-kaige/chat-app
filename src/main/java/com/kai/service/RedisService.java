@@ -1,9 +1,14 @@
 package com.kai.service;
 
 import com.kai.RedisOptEnum;
+import com.kai.context.UserContext;
+import com.kai.util.AssertUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.concurrent.TimeUnit;
 
@@ -12,6 +17,7 @@ public class RedisService {
 
     private final StringRedisTemplate redisTemplate;
     private final HashOperations<String, String, String> hashOperations;
+    private final ValueOperations<String, String> valueOperations;
 
     // Redis 键名
 
@@ -19,6 +25,7 @@ public class RedisService {
     public RedisService(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
         this.hashOperations = redisTemplate.opsForHash();
+        this.valueOperations=redisTemplate.opsForValue();
     }
 
     /**
@@ -33,6 +40,30 @@ public class RedisService {
         hashOperations.put(redisOptEnum.getValue(), email, code);
         redisTemplate.expire(redisOptEnum.getValue(), timeoutMinutes, TimeUnit.MINUTES);
     }
+
+
+    public void setRedisToken(String token,String userId) {
+        valueOperations.set(RedisOptEnum.LOGIN_INFO.getValue()+"_"+userId,token);
+    }
+
+    public void delRedisToken(String userId) {
+        valueOperations.getOperations().delete(RedisOptEnum.LOGIN_INFO.getValue()+"_"+userId);
+    }
+
+    public void delRedisToken() {
+        valueOperations.getOperations().delete(RedisOptEnum.LOGIN_INFO.getValue()+"_"+UserContext.getUserId());
+
+    }
+    public String getRedisToken(String userId) {
+        return valueOperations.get(RedisOptEnum.LOGIN_INFO.getValue() + "_" + userId);
+    }
+
+    public boolean existKey(String key){
+        AssertUtils.assertNotEmpty(key,"key不能为空");
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+
 
     /**
      * 获取验证码

@@ -2,7 +2,6 @@ package com.kai.controller;
 
 
 import com.kai.RedisOptEnum;
-import com.kai.context.UserContext;
 import com.kai.model.User;
 import com.kai.model.req.EmailRequest;
 import com.kai.model.req.LoginRequest;
@@ -12,18 +11,15 @@ import com.kai.service.EmailService;
 import com.kai.service.RedisService;
 import com.kai.service.UserService;
 import com.kai.util.JwtUtil;
-import io.jsonwebtoken.Claims;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
 import com.kai.common.R;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api")
@@ -37,6 +33,8 @@ public class UserController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private  SimpMessagingTemplate messagingTemplate;
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -76,9 +74,25 @@ public class UserController {
 
         Optional<User> optionalUser = userService.loginUser(loginRequest.getIdentifier(), loginRequest.getPassword());
 
+
         if(optionalUser.isPresent()){
+
+
+
             User loggedInUser = optionalUser.get();
+
+            String hasToken = redisService.getRedisToken(String.valueOf(loggedInUser.getId()));
+            if (hasToken != null) {
+                redisService.delRedisToken(String.valueOf(loggedInUser.getId())); // 将旧会话踢下线
+                messagingTemplate.convertAndSend("/logout/" +hasToken, "当前账号在其他地方登录");
+
+            }
+
+
             String token = JwtUtil.generateToken(loggedInUser.getUsername(), String.valueOf(loggedInUser.getId()));
+
+            redisService.setRedisToken(token, String.valueOf(loggedInUser.getId()));
+
             return R.ok(Map.of("token", token, "userId", loggedInUser.getId(),"username",loggedInUser.getUsername()));
         }else {
             logger.info("Login failed for user: 用户名或密码错误");
@@ -88,6 +102,14 @@ public class UserController {
 
 
     }
+
+
+    @GetMapping("/logout")
+    public R<?> logout(){
+        redisService.delRedisToken();
+        return R.ok();
+    }
+
 
     @PostMapping("/token/validate")
     public R<?> validateToken(@RequestHeader("Authorization") String authorizationHeader) {

@@ -8,7 +8,10 @@ public enum RedisOptEnum {
 
     PASSWORD_RESET_CODES("password_reset_codes", "密码重置验证码"),
 
-    CAPTCHA_CODES("captcha_codes", "图形验证码");
+    CAPTCHA_CODES("captcha_codes", "图形验证码"),
+
+    //当前登录信息
+    LOGIN_INFO("login_info","登录TOKEN");
 
     private final String value;
     private final String desc;
