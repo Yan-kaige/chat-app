@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -79,7 +81,7 @@ public class FileUploadController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return R.ok("File upload failed: " + e.getMessage());
+            return R.fail("File upload failed: " + e.getMessage());
         }
     }
 
@@ -102,7 +104,7 @@ public class FileUploadController {
             byte[] bytes = stream.readAllBytes();
 
 
-            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileRecord.getFileRealName() + "\"");
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + URLEncoder.encode(fileRecord.getFileRealName(), StandardCharsets.UTF_8)  + "\"");
             response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
             response.getOutputStream().write(bytes);
 

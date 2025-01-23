@@ -9,7 +9,7 @@ public class MinioConfig {
     @Bean
     public MinioClient minioClient() {
         return MinioClient.builder()
-                .endpoint("http://192.168.31.188:9000") // MinIO服务地址
+                .endpoint("http://localhost:9000") // MinIO服务地址
                 .credentials("admin", "admin123") // MinIO用户名和密码
                 .build();
     }

@@ -47,10 +47,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 跳过不需要认证的路径
         if (requestPath.equals("/api/login") ||
-                requestPath.equals("/api/register") ||
-                requestPath.startsWith("/ws")
+                requestPath.equals("/api/register")
+//                requestPath.startsWith("/ws")
                 || requestPath.startsWith("/minio")
-                || requestPath.startsWith("/api/file")
+//                || requestPath.startsWith("/api/file")
                 || requestPath.startsWith("/api/token/validate")
         ) { // 添加对 WebSocket 路径的放行
             filterChain.doFilter(request, response);
@@ -59,7 +59,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
         String authorizationHeader = request.getHeader("Authorization");
+        auth(authorizationHeader);
+        filterChain.doFilter(request, response);
+    }
 
+    private void auth(String authorizationHeader) throws ServletException {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
             try {
@@ -90,6 +94,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 throw new ServletException(e.getMessage());
             }
         }
-        filterChain.doFilter(request, response);
     }
 }

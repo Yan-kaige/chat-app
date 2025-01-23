@@ -78,12 +78,12 @@ public class ChatRoomController {
         return chatRoomService.joinChatRoom(roomId, password);
     }
 
-    // 发送消息
-    @PostMapping("/{roomId}/messages")
-    public R<ChatRoomMessage> sendMessage(@PathVariable Long roomId, @RequestBody ChatRoomMessage message) {
-        ChatRoomMessage chatRoomMessage = chatRoomService.sendMessage(roomId, message);
-        return R.ok(chatRoomMessage);
-    }
+//    // 发送消息
+//    @PostMapping("/{roomId}/messages")
+//    public R<ChatRoomMessage> sendMessage(@PathVariable Long roomId, @RequestBody ChatRoomMessage message) {
+//        ChatRoomMessage chatRoomMessage = chatRoomService.sendMessage(roomId, message);
+//        return R.ok(chatRoomMessage);
+//    }
 
     /**
      * 获取当前聊天室在线人员列表

@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatRoomMessage, Long> {
 
-    List<ChatRoomMessage> findAllByChatRoomId(Long chatRoomId);
+    //通过创建时间排序
+    List<ChatRoomMessage> findAllByChatRoomIdOrderByCreatedAt(Long chatRoomId);
 }

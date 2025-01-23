@@ -15,6 +15,6 @@ public class ChatRoomMessageService {
 
     // 获取所有聊天信息根据聊天室id
     public List<ChatRoomMessage> getAllChatRoomMessagesByChatRoomId(Long chatRoomId) {
-        return chatMessageRepository.findAllByChatRoomId(chatRoomId);
+        return chatMessageRepository.findAllByChatRoomIdOrderByCreatedAt(chatRoomId);
     }
 }

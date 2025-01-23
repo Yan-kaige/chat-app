@@ -11,6 +11,8 @@ import com.kai.repository.ChatMessageRepository;
 import com.kai.repository.ChatRoomRepository;
 import com.kai.repository.ChatRoomUserRepository;
 import com.kai.repository.UserRepository;
+import com.kai.server.WebSocketMessageHandler;
+import com.kai.util.SnowId;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import com.kai.common.R;
@@ -117,13 +119,19 @@ public class ChatRoomService {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new IllegalArgumentException("User not found"));
 
 
+        //主键id为空 则设置
+        if(message.getMessageId()==null){
+            message.setMessageId(SnowId.nextId());
+        }
+
         message.setUser(user);
         message.setChatRoom(ChatRoom.builder().id(roomId).build());
         message.setCreatedAt(LocalDateTime.now());
         chatMessageRepository.save(message);
 
         // 广播消息到 WebSocket 订阅的客户端
-        messagingTemplate.convertAndSend("/topic/chatroom/" + roomId, message);
+//        messagingTemplate.convertAndSend("/topic/chatroom/" + roomId, message);
+        WebSocketMessageHandler.broadcastMessage(roomId.toString(), String.valueOf(message.getMessageId()));
 
         // 广播消息到 WebSocket 订阅的客户端
         return message;
