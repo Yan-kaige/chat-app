@@ -1,11 +1,18 @@
 package com.kai.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.kai.context.UserContext;
+import com.kai.enums.MessageTypeEnum;
+import com.kai.exception.ServiceException;
 import com.kai.model.ChatRoom;
 import com.kai.model.InvitationMessage;
+import com.kai.model.User;
 import com.kai.repository.ChatRoomRepository;
 import com.kai.repository.InvitationMessageRepository;
+import com.kai.repository.UserRepository;
+import com.kai.server.WebSocketMessageHandler;
 import com.kai.service.ChatRoomService;
+import com.kai.util.SnowId;
 import lombok.AllArgsConstructor;
 import com.kai.common.R;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -13,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -23,9 +31,13 @@ public class InvitationMessageController {
 
     private InvitationMessageRepository invitationMessageRepository;
 
-    private SimpMessagingTemplate messagingTemplate;
 
     private ChatRoomRepository chatRoomRepository;
+
+    private UserRepository userRepository;
+
+
+    WebSocketMessageHandler webSocketMessageHandler;
 
 
     @PostMapping("/chatroom/{roomId}/invite")
@@ -39,20 +51,30 @@ public class InvitationMessageController {
         List<InvitationMessage> invitationMessages = userIds.stream()
                 .map(receiverId -> {
                     InvitationMessage message = new InvitationMessage();
+                    long id = SnowId.nextId();
+                    message.setId(id);
                     message.setChatRoomId(roomId);
                     message.setSenderId(senderId);
                     message.setReceiverId(receiverId);
                     message.setMessageText("You have been invited to join Chat Room: " + roomId);
                     message.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+
+
+                    userRepository.findById(receiverId).ifPresent(
+                            user -> {
+                                try {
+                                    WebSocketMessageHandler.broadcastPrivateMessage(user.getUsername(), "You have been invited to join Chat Room: " + roomId, String.valueOf(id), MessageTypeEnum.NOTIFY_MESSAGE);
+                                } catch (JsonProcessingException e) {
+                                    throw new ServiceException("Failed to send invitation message");
+                                }
+                            }
+                    );
                     return message;
                 }).collect(Collectors.toList());
 
         invitationMessageRepository.saveAll(invitationMessages);
 
-        // 推送消息到被邀请者
-        userIds.forEach(receiverId -> {
-            messagingTemplate.convertAndSend("/topic/invite/" + receiverId, "收到一条邀请消息 邀请人："+ UserContext.getUsername() +"邀请你到聊天室: " + chatRoomNotFound.getName());
-        });
+
 
         return R.ok("Invitations sent successfully");
     }

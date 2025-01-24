@@ -135,7 +135,7 @@ public class PrivateMessageService {
         //私聊消息广播
 
 //        if(!"1".equals(privateMessage.getMessageType())){
-//            WebSocketMessageHandler.broadcastPrivateMessage(String.valueOf(privateMessage.getChatRoomId()),receiver.get().getUsername(),String.valueOf(privateMessage.getId()));
+//            WebSocketMessageHandler.broadcastRoomPrivateMessage(String.valueOf(privateMessage.getChatRoomId()),receiver.get().getUsername(),String.valueOf(privateMessage.getId()));
 //        }
 
 
