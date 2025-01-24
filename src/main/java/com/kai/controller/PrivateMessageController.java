@@ -24,10 +24,10 @@ public class PrivateMessageController {
     }
 
     //私聊消息发送
-    @PostMapping("/send/{chatRoomId}/{friendId}")
-    public R<?> sendPrivateMessage(@PathVariable Long chatRoomId, @PathVariable Long friendId, @RequestBody PrivateMessage privateMessage) {
-        privateMessageService.sendPrivateMessage(chatRoomId,friendId,privateMessage);
-        return R.ok();
-    }
+//    @PostMapping("/send/{chatRoomId}/{friendId}")
+//    public R<?> sendPrivateMessage(@PathVariable Long chatRoomId, @PathVariable Long friendId, @RequestBody PrivateMessage privateMessage) {
+//        privateMessageService.sendPrivateMessage(chatRoomId,friendId,privateMessage);
+//        return R.ok();
+//    }
 
 }

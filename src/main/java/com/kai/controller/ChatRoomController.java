@@ -31,7 +31,6 @@ public class ChatRoomController {
 
     private UserService userService;
 
-    private MinioService minioService;
 
     PrivateMessageService privateMessageService;
 
@@ -129,135 +128,43 @@ public class ChatRoomController {
         return R.ok("Chat room password updated successfully");
     }
 
-    @PostMapping("/sendMediaToRoom/{roomId}")
-    public R<?> sendMediaToRoom(@RequestParam("file") MultipartFile file,@PathVariable Long roomId) {
-        try {
-            // 上传音频到 MinIO 并获取文件 URL
-            ChatRoomMessage chatRoomMessage = new ChatRoomMessage();
-
-            //根据文件名称判断是音频 图片 还是视频
-            String fileName = file.getOriginalFilename();
-            AssertUtils.assertNotEmpty(fileName, "文件名不能为空");
-            String fileType = fileName.substring(fileName.lastIndexOf(".")+1);
-            switch (fileType) {
-                case "mp3":
-                case "wav":
-                case "webm":
-                    chatRoomMessage.setMessageType("3");
-                    break;
-                case "jpg":
-                case "png":
-                case "jpeg":
-                    chatRoomMessage.setMessageType("2");
-                    break;
-                case "mp4":
-                case "avi":
-                case "mov":
-                    chatRoomMessage.setMessageType("4");
-                    break;
-                default:
-                    chatRoomMessage.setMessageText(fileName);
-                    chatRoomMessage.setMessageType("5");
-            }
-
-            String bucketName = "";
-
-            switch (chatRoomMessage.getMessageType()) {
-                case "2":
-                    bucketName = "image-messages";
-                    break;
-                case "3":
-                    bucketName = "audio-messages";
-                    break;
-                case "4":
-                    bucketName = "video-messages";
-                    break;
-                default:
-                    bucketName="other-messages";
-            }
-
-            String url = minioService.upload(file, bucketName);
-            chatRoomMessage.setMediaUrl(url);
+//    @PostMapping("/sendMediaToRoom/{roomId}")
+//    public R<?> sendMediaToRoom(@RequestParam("file") MultipartFile file,@PathVariable Long roomId) {
+//        try {
+//
+//
+//
+//            chatRoomService.sendMessage(file,roomId, chatRoomMessage);
+//
+//
+//
+//            // 返回音频 URL
+//            return R.success("上传成功", Collections.singletonMap("url", url));
+//        } catch (Exception e) {
+//            logger.error("上传音频失败", e);
+//            return R.error("上传失败");
+//        }
+//    }
 
 
-            chatRoomService.sendMessage(roomId, chatRoomMessage);
-
-
-
-            // 返回音频 URL
-            return R.success("上传成功", Collections.singletonMap("url", url));
-        } catch (Exception e) {
-            logger.error("上传音频失败", e);
-            return R.error("上传失败");
-        }
-    }
-
-
-    @PostMapping("/sendMediaToPerson/{roomId}/{personId}")
-    public R<?> sendMediaToPerson(@RequestParam("file") MultipartFile file,@PathVariable("personId") Long personId,@PathVariable("roomId") Long roomId) {
-        try {
-            // 上传音频到 MinIO 并获取文件 URL
-            PrivateMessage privateMessage = new PrivateMessage();
-
-            //根据文件名称判断是音频 图片 还是视频
-            String fileName = file.getOriginalFilename();
-            AssertUtils.assertNotEmpty(fileName, "文件名不能为空");
-            String fileType = fileName.substring(fileName.lastIndexOf(".")+1);
-            switch (fileType) {
-                case "mp3":
-                case "wav":
-                case "webm":
-
-                    privateMessage.setMessageType("3");
-                    break;
-                case "jpg":
-                case "png":
-                case "jpeg":
-                    privateMessage.setMessageType("2");
-                    break;
-                case "mp4":
-                case "avi":
-                case "mov":
-                    privateMessage.setMessageType("4");
-                    break;
-                default:
-                    privateMessage.setMessageText(fileName);
-                    privateMessage.setMessageType("5");
-            }
-
-            String bucketName = "";
-
-            switch (privateMessage.getMessageType()) {
-                case "2":
-                    bucketName = "image-messages";
-                    break;
-                case "3":
-                    bucketName = "audio-messages";
-                    break;
-                case "4":
-                    bucketName = "video-messages";
-                    break;
-                default:
-                    bucketName="other-messages";
-            }
-
-            String url = minioService.upload(file, bucketName);
-            privateMessage.setMediaUrl(url);
-
-
-            privateMessageService.sendPrivateMessage(roomId, personId,privateMessage);
-
-
-
-
-
-            // 返回音频 URL
-            return R.success("上传成功", Collections.singletonMap("url", url));
-        } catch (Exception e) {
-            logger.error("上传音频失败", e);
-            return R.error("上传失败");
-        }
-    }
+//    @PostMapping("/sendMediaToPerson/{roomId}/{personId}")
+//    public R<?> sendMediaToPerson(@RequestParam("file") MultipartFile file,@PathVariable("personId") Long personId,@PathVariable("roomId") Long roomId) {
+//        try {
+//
+//
+//            privateMessageService.sendPrivateMessage(file,roomId, personId,privateMessage);
+//
+//
+//
+//
+//
+//            // 返回音频 URL
+//            return R.success("上传成功", Collections.singletonMap("url", url));
+//        } catch (Exception e) {
+//            logger.error("上传音频失败", e);
+//            return R.error("上传失败");
+//        }
+//    }
 
 
 }

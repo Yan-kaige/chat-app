@@ -1,6 +1,7 @@
 package com.kai.service;
 
 
+import com.kai.common.R;
 import com.kai.context.UserContext;
 import com.kai.exception.ServiceException;
 import com.kai.model.ChatRoom;
@@ -11,12 +12,9 @@ import com.kai.repository.ChatMessageRepository;
 import com.kai.repository.ChatRoomRepository;
 import com.kai.repository.ChatRoomUserRepository;
 import com.kai.repository.UserRepository;
-import com.kai.server.WebSocketMessageHandler;
+import com.kai.util.AssertUtils;
 import com.kai.util.SnowId;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
-import com.kai.common.R;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -38,7 +36,7 @@ public class ChatRoomService {
 
     private ChatMessageRepository chatMessageRepository;
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private MinioService minioService;
 
 
     // 创建聊天室
@@ -110,7 +108,63 @@ public class ChatRoomService {
         return R.ok("Joined chatroom successfully");
     }
 
-    public ChatRoomMessage sendMessage(Long roomId, ChatRoomMessage message) {
+
+    public ChatRoomMessage sendMessage(byte[] bytes, Long roomId, Long msgId ,String fileName,String fileType) throws Exception {
+
+        // 上传音频到 MinIO 并获取文件 URL
+        ChatRoomMessage chatRoomMessage = new ChatRoomMessage();
+        chatRoomMessage.setMessageId(msgId);
+
+        //根据文件名称判断是音频 图片 还是视频
+        AssertUtils.assertNotEmpty(fileName, "文件名不能为空");
+        switch (fileType) {
+            case "mp3":
+            case "wav":
+            case "webm":
+                chatRoomMessage.setMessageType("3");
+                break;
+            case "jpg":
+            case "png":
+            case "jpeg":
+                chatRoomMessage.setMessageType("2");
+                break;
+            case "mp4":
+            case "avi":
+            case "mov":
+                chatRoomMessage.setMessageType("4");
+                break;
+            default:
+                chatRoomMessage.setMessageText(fileName);
+                chatRoomMessage.setMessageType("5");
+        }
+
+        String bucketName = "";
+
+        switch (chatRoomMessage.getMessageType()) {
+            case "2":
+                bucketName = "image-messages";
+                break;
+            case "3":
+                bucketName = "audio-messages";
+                break;
+            case "4":
+                bucketName = "video-messages";
+                break;
+            default:
+                bucketName = "other-messages";
+        }
+
+        String url = minioService.upload(bytes, bucketName, fileName, "audio/mpeg");
+        chatRoomMessage.setMediaUrl(url);
+        return sendMessage(roomId, chatRoomMessage);
+
+
+    }
+
+
+    public ChatRoomMessage sendMessage(Long roomId, ChatRoomMessage message) throws Exception {
+
+
         if (!chatRoomRepository.existsById(roomId)) {
             throw new RuntimeException("Chat room not found");
         }
@@ -131,7 +185,7 @@ public class ChatRoomService {
 
         // 广播消息到 WebSocket 订阅的客户端
 //        messagingTemplate.convertAndSend("/topic/chatroom/" + roomId, message);
-        WebSocketMessageHandler.broadcastMessage(roomId.toString(), String.valueOf(message.getMessageId()));
+//        WebSocketMessageHandler.broadcastMessage(roomId.toString(), String.valueOf(message.getMessageId()));
 
         // 广播消息到 WebSocket 订阅的客户端
         return message;

@@ -45,7 +45,7 @@ public class NettyServer implements InitializingBean {
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast(new HttpServerCodec());
                             pipeline.addLast(new HttpObjectAggregator(65536));
-                            pipeline.addLast(new WebSocketServerProtocolHandler("/ws")); // WebSocket 路径
+                            pipeline.addLast(new WebSocketServerProtocolHandler("/ws", null, true, 10 * 1024 * 1024)); // WebSocket 路径
                             pipeline.addLast(applicationContext.getBean(WebSocketMessageHandler.class)); // 消息处理器
                         }
                     });
