@@ -1,7 +1,6 @@
-package com.kai.model;
+package com.kai.vo;
 
 
-import com.kai.vo.InvitationMessageVo;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -10,12 +9,12 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "invitation_message")
 @Data
-public class InvitationMessage {
+public class InvitationMessageVo {
 
     @Id
 //    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long id; // 主键 ID
+    private String id; // 主键 ID
 
     @Column(name = "chat_room_id", nullable = false)
     private Long chatRoomId; // 聊天室 ID
@@ -41,19 +40,6 @@ public class InvitationMessage {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-    }
-
-    public InvitationMessageVo toVo(){
-        InvitationMessageVo vo = new InvitationMessageVo();
-        vo.setId(String.valueOf(this.id));
-        vo.setChatRoomId(this.chatRoomId);
-        vo.setSenderId(this.senderId);
-        vo.setReceiverId(this.receiverId);
-        vo.setMessageText(this.messageText);
-        vo.setStatus(this.status);
-        vo.setCreatedAt(this.createdAt);
-        vo.setExpiredAt(this.expiredAt);
-        return vo;
     }
 }
 

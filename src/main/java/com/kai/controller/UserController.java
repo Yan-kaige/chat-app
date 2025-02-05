@@ -1,12 +1,16 @@
 package com.kai.controller;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.kai.RedisOptEnum;
+import com.kai.context.UserContext;
+import com.kai.enums.MessageTypeEnum;
 import com.kai.model.User;
 import com.kai.model.req.EmailRequest;
 import com.kai.model.req.LoginRequest;
 import com.kai.model.req.RegisterRequest;
 import com.kai.model.req.ResetPasswordRequest;
+import com.kai.server.WebSocketMessageHandler;
 import com.kai.service.EmailService;
 import com.kai.service.RedisService;
 import com.kai.service.UserService;
@@ -15,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.kai.common.R;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -32,9 +35,6 @@ public class UserController {
 
     @Autowired
     private EmailService emailService;
-
-    @Autowired
-    private  SimpMessagingTemplate messagingTemplate;
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -62,7 +62,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public R<?> loginUser(@RequestBody LoginRequest loginRequest) {
+    public R<?> loginUser(@RequestBody LoginRequest loginRequest) throws JsonProcessingException {
 
         // 验证验证码
         String cachedCaptcha = redisService.getVerificationCode(loginRequest.getCaptchaKey(), RedisOptEnum.CAPTCHA_CODES);
@@ -84,7 +84,8 @@ public class UserController {
             String hasToken = redisService.getRedisToken(String.valueOf(loggedInUser.getId()));
             if (hasToken != null) {
                 redisService.delRedisToken(String.valueOf(loggedInUser.getId())); // 将旧会话踢下线
-                messagingTemplate.convertAndSend("/logout/" +hasToken, "当前账号在其他地方登录");
+
+                WebSocketMessageHandler.broadcastPrivateMessage(loggedInUser.getUsername(), "当前账号在其他地方登录" , null, MessageTypeEnum.LOGOUT_MESSAGE,null);
 
             }
 

@@ -12,6 +12,7 @@ import com.kai.model.PrivateMessage;
 import com.kai.service.ChatRoomService;
 import com.kai.service.PrivateMessageService;
 import com.kai.service.RedisService;
+import com.kai.util.AssertUtils;
 import com.kai.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.netty.buffer.ByteBuf;
@@ -19,6 +20,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.ContinuationWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -151,7 +153,7 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
                 broadcastMessage(roomId, messageId);
             }else if("private".equals(action)){
                 PrivateMessage privateMessage = privateMessageService.sendPrivateMessage(fileBytes, Long.valueOf(roomId), Long.valueOf(receiverId), Long.valueOf(messageId), fileName, fileType);
-                broadcastRoomPrivateMessage(roomId,privateMessage.getReceiver().getUsername(),MessageTypeEnum.SINGLE_FILE_MESSAGE.getDesc(),messageId,MessageTypeEnum.SINGLE_FILE_MESSAGE);
+                broadcastRoomPrivateMessage(roomId, privateMessage.getReceiver().getUsername(), MessageTypeEnum.SINGLE_FILE_MESSAGE.getDesc(), messageId, MessageTypeEnum.SINGLE_FILE_MESSAGE, ctx);
             }
 
 
@@ -169,8 +171,35 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
 
             JsonNode jsonNode = mapper.readTree(jsonMessage);
             String action = jsonNode.get("action").asText();
+
+            if ("register".equals(action)) {
+                String token =jsonNode.get("auth").asText();
+                this.auth(token); // 认证用户
+                String username = UserContext.getUsername();
+                AssertUtils.assertNotEmpty(username, "未认证");
+                Channel newChannel = ctx.channel();
+
+                // 移除旧的 Channel（如果存在）
+                Channel oldChannel = userChannels.put(username, newChannel);
+                if (oldChannel != null && oldChannel != newChannel) {
+                    oldChannel.close(); // 关闭旧的 Channel（
+                }
+
+                // 更新聊天室中的用户 Channel
+                chatRooms.forEach((roomId, roomChannels) -> {
+                    if (roomChannels.containsKey(username)) {
+                        Channel old = roomChannels.put(username, newChannel);// 更新为新 Channel
+                        if (old != null && old != newChannel) {
+                            old.close(); // 关闭旧的 Channel}
+                        }
+                    }
+                });
+                return;
+            }
+
+
             String id = jsonNode.get("id").asText();
-            if ("authenticate".equals(action) || "logout".equals(action)){
+            if ("logout".equals(action)) {
                 String token = jsonNode.get("token").asText();
                 if (token != null){
                     this.auth(token);
@@ -178,26 +207,10 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
                     throw new ServletException("未认证");
                 }
 
-                if("logout".equals(action)){
-                    ctx.close();
-                    userChannels.remove(UserContext.getUsername());
-                    logger.info("用户 {} 已断开连接", UserContext.getUsername());
-                    UserContext.clear();
-                }else {
-                    //查看当前用户有没有在别处登录  有的话通知下线
-                    if (userChannels.containsKey(UserContext.getUsername())) {
-                        Channel channel = userChannels.get(UserContext.getUsername());
-                        HashMap<String, String> res = new HashMap<>();
-                        res.put("message", "您的账号在别处登录，您已被迫下线");
-                        res.put("type", MessageTypeEnum.LOGOUT_MESSAGE.getType());
-                        String s = mapper.writeValueAsString(res);
-                        channel.writeAndFlush(new TextWebSocketFrame(s));
-                        channel.close();
-                    }
-                    userChannels.put(UserContext.getUsername(), ctx.channel());
-                    logger.info("用户 {} 已连接", UserContext.getUsername());
-
-                }
+                ctx.close();
+                userChannels.remove(UserContext.getUsername());
+                logger.info("用户 {} 已断开连接", UserContext.getUsername());
+                UserContext.clear();
                 return;
 
             }else {
@@ -208,14 +221,6 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
                     throw new ServletException("未认证");
                 }
             }
-
-//            if("notify".equals(action)){
-//                String receiverId = jsonNode.get("receiverId").asText();
-//                String messageId = jsonNode.get("id").asText();
-//                String message = jsonNode.get("message").asText();
-//                broadcastPrivateMessage(receiverId, message, messageId, MessageTypeEnum.NOTIFY_MESSAGE);
-//                return;
-//            }
 
 
             String roomId = jsonNode.get("roomId").asText();
@@ -251,7 +256,7 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
                 privateMessage.setMessageText(content);
                 privateMessage.setId(Long.valueOf(id));
                 String receiverUserName = privateMessageService.sendPrivateMessage(privateMessage).getReceiver().getUsername();
-                broadcastRoomPrivateMessage(roomId, receiverUserName, content,id,MessageTypeEnum.SINGLE_MESSAGE);
+                broadcastRoomPrivateMessage(roomId, receiverUserName, content, id, MessageTypeEnum.SINGLE_MESSAGE, ctx);
             }else{
                 throw new ServletException("未知消息类型");
             }
@@ -267,19 +272,29 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
 
     }
 
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+
+    }
+
+    private String getTokenFromHeaders(FullHttpRequest request) {
+        // 提取握手时的 FullHttpRequest
+        if (request == null) {
+            return null;
+        }
+
+        // 获取请求头中的 Token
+        String token = request.headers().get("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            return token.substring(7); // 去掉 "Bearer " 前缀
+        }
+        throw new ServiceException("未认证");
+    }
+
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
-        // 替换为新channel
-        userChannels.put(UserContext.getUsername(), ctx.channel());
 
-         //替换为新channel
-        chatRooms.forEach((roomId, subscribers) -> {
-            subscribers.forEach((username, channel) -> {
-                if (channel == ctx.channel()) {
-                    subscribers.put(username, ctx.channel());
-                }
-            });
-        });
     }
 
     @Override
@@ -359,25 +374,39 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
     /**
      * 房间私聊消息 广播
      */
-    public static void broadcastRoomPrivateMessage(String roomId, String target, String message, String msgId,MessageTypeEnum messageTypeEnum) throws JsonProcessingException {
+    public static void broadcastRoomPrivateMessage(String roomId, String target, String message, String msgId, MessageTypeEnum messageTypeEnum, ChannelHandlerContext ctx) throws JsonProcessingException {
         ConcurrentHashMap<String, Channel> subscribers = chatRooms.get(roomId);
         HashMap<String, String> res = new HashMap<>();
         ObjectMapper objectMapper = new ObjectMapper();
-        Channel sender = userChannels.get(UserContext.getUsername());
+//        Channel sender = userChannels.get(UserContext.getUsername());
         if (subscribers != null && subscribers.containsKey(target)) {
-            broadcastPrivateMessage(target, message,msgId,messageTypeEnum);
+            broadcastPrivateMessage(target, message, msgId, messageTypeEnum, ctx);
         } else {
             res.put("errMsg","用户 " + target + " 不在房间 " + roomId);
+            res.put("id", msgId);
             String s = objectMapper.writeValueAsString(res);
-            sender.writeAndFlush(new TextWebSocketFrame(s));
+            ctx.channel().writeAndFlush(new TextWebSocketFrame(s));
         }
     }
 
-    public static void broadcastPrivateMessage(String target, String message,  String msgId,MessageTypeEnum messageTypeEnum) throws JsonProcessingException {
+    public static void broadcastPrivateMessage(String target, String message, String msgId, MessageTypeEnum messageTypeEnum, ChannelHandlerContext ctx) throws JsonProcessingException {
         HashMap<String, String> res = new HashMap<>();
         Channel targetChannel = userChannels.get(target);
         ObjectMapper objectMapper = new ObjectMapper();
-        Channel sender = userChannels.get(UserContext.getUsername());
+
+        if(MessageTypeEnum.LOGOUT_MESSAGE.getType().equals(messageTypeEnum.getType())){
+            res.put("message", message);
+            res.put("type",messageTypeEnum.getType());
+            res.put("id", msgId);
+            res.put("from",UserContext.getUsername());
+            res.put("to", target);
+            String json = objectMapper.writeValueAsString(res);
+            targetChannel.writeAndFlush(new TextWebSocketFrame(json));
+            return;
+        }
+
+
+        Channel sender = ctx== null ? userChannels.get(UserContext.getUsername()) : ctx.channel();
         if (targetChannel != null) {
             try {
                 res.put("message", message);
@@ -389,12 +418,13 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<WebSock
                 String json = objectMapper.writeValueAsString(res);
 
                 targetChannel.writeAndFlush(new TextWebSocketFrame(json));
-//                sender.writeAndFlush(new TextWebSocketFrame(json));
+                sender.writeAndFlush(new TextWebSocketFrame(json));
             } catch (Exception e) {
                 logger.error("发送私聊消息给 {} 时发生异常", target, e);
             }
         } else {
             res.put("errMsg","用户" + target + " 不在线或不存在");
+            res.put("id", msgId);
             String s = objectMapper.writeValueAsString(res);
             sender.writeAndFlush(new TextWebSocketFrame(s));
         }
